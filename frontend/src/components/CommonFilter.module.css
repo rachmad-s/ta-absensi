@@ -1,0 +1,24 @@
+.avatarButton {
+    position: relative;
+}
+
+.avatarButton:hover {
+    cursor: pointer;
+}
+
+.avatarButton::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -0.5rem;
+    right: 0;
+    bottom: 0;
+    background-color: white;
+    z-index: 2;
+    border-radius: 50%;
+    opacity: .4;
+}
+
+.avatarButton.active::after {
+    opacity: 0;
+}

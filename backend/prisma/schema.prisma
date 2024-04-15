@@ -1,0 +1,192 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String            @id @unique @default(uuid())
+  email           String            @unique
+  password        String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  role            Role              @default(USER)
+  profile         Profile?
+  attendances     Attendance[]
+  supervisorId    String?
+  supervisor      User?             @relation("Supervision", fields: [supervisorId], references: [id])
+  supervising     User[]            @relation("Supervision")
+  timeOffrequests TimeOffRequest[]
+  overTimeRequest OverTimeRequest[]
+  requestActions  RequestActions[]
+}
+
+model TimeOffRequest {
+  id             String            @id @unique @default(uuid())
+  message        String?
+  attachment     String?
+  type           TimeOffConfigName
+  days           Int
+  startDate      DateTime
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  userId         String
+  user           User              @relation(fields: [userId], references: [id])
+  requestActions RequestActions[]
+}
+
+model OverTimeRequest {
+  id             String           @id @unique @default(uuid())
+  message        String?
+  date           DateTime
+  duration       Int
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  userId         String
+  user           User             @relation(fields: [userId], references: [id])
+  requestActions RequestActions[]
+}
+
+model RequestActions {
+  id                String           @id @unique @default(uuid())
+  status            RequestStatuses
+  timeOffRequestId  String?
+  overTimeRequestId String?
+  remarks           String?
+  createdBy         String
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  timeOffRequest    TimeOffRequest?  @relation(fields: [timeOffRequestId], references: [id])
+  overTimeRequest   OverTimeRequest? @relation(fields: [overTimeRequestId], references: [id])
+  user              User             @relation(fields: [createdBy], references: [id])
+}
+
+model Profile {
+  id        String   @id @unique @default(uuid())
+  name      String?  @db.VarChar(100)
+  address   String?
+  avatarUrl String?  @db.VarChar(500)
+  dob       String?  @db.VarChar(16)
+  position  String?  @db.VarChar(50)
+  level     Int      @default(0) @db.SmallInt()
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  teamId String?
+  team   Team?   @relation(fields: [teamId], references: [id])
+
+  userId String? @unique
+  user   User?   @relation(fields: [userId], references: [id])
+}
+
+model Attendance {
+  id       String         @id @unique @default(uuid())
+  date     DateTime       @default(now())
+  photoUrl String?
+  type     AttendanceType @default(IN)
+  remarks  String?
+  status  AttendanceStatuses @default(APPROVED)
+  similarity Int @default(0)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+}
+
+model Team {
+  id        String   @id @unique @default(uuid())
+  name      String   @unique @db.VarChar(255)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id])
+
+  profiles Profile[]
+}
+
+model Department {
+  id        String   @id @unique @default(uuid())
+  name      String   @unique @db.VarChar(255)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  teams Team[]
+}
+
+model PublicHoliday {
+  id        String   @id @unique @default(uuid())
+  name      String   @db.VarChar(100)
+  date      DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Config {
+  id       String     @id @unique @default(uuid())
+  name     ConfigName @unique
+  label    String
+  value    String
+  isActive Boolean
+}
+
+model TimeOffConfig {
+  id       String            @id @unique @default(uuid())
+  name     TimeOffConfigName @unique
+  label    String
+  quota    String
+  duration String
+  needDocs Boolean?          @default(false)
+  per      TimeOffQuotaPer   @default(YEAR)
+}
+
+enum Role {
+  USER
+  ADMIN
+  HR
+}
+
+enum RequestStatuses {
+  APPROVED
+  REJECTED
+}
+
+enum AttendanceType {
+  IN
+  OUT
+}
+
+enum AttendanceStatuses {
+  APPROVED
+  WAITING
+  REJECTED
+}
+
+enum ConfigName {
+  OVERTIME_RATE_PER_HOUR
+  WORKING_HOUR
+  TIME_IN
+  TIME_OUT
+  OVERTIME_AFTER
+  LATE_CUT_AFTER
+  MAX_OVERTIME_ALLOWANCE
+}
+
+enum TimeOffQuotaPer {
+  YEAR
+  CONTRACT
+}
+
+enum TimeOffConfigName {
+  ANNUAL_LEAVE
+  SICK_LEAVE
+  MATERNITY_LEAVE
+  MARRIAGE_LEAVE
+  MOURNING_LEAVE
+  SPECIAL_LEAVE
+}
